@@ -1,0 +1,89 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #f4f4f4;
+  color: #1a1a1a;
+}
+
+.app {
+  max-width: 760px;
+  margin: 20px auto;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 12px;
+}
+
+.layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#board {
+  border: 1px solid #999;
+  background: #fff;
+  width: 300px;
+  height: 600px;
+}
+
+.panel p {
+  margin: 0 0 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+  border: 1px solid #999;
+  background: #fff;
+  color: #1a1a1a;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.help {
+  font-size: 0.9rem;
+}
+
+.controls {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.controls button {
+  min-width: 76px;
+  min-height: 52px;
+  font-size: 1.2rem;
+  touch-action: manipulation;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  #board {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 1 / 2;
+  }
+
+  .controls button {
+    flex: 1;
+    min-width: 90px;
+    min-height: 60px;
+    font-size: 1.35rem;
+  }
+}
