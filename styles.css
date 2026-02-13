@@ -10,7 +10,7 @@ body {
 }
 
 .app {
-  max-width: 760px;
+  max-width: 920px;
   margin: 20px auto;
   padding: 16px;
 }
@@ -28,12 +28,27 @@ h1 {
 #board {
   border: 1px solid #999;
   background: #fff;
-  width: 300px;
-  height: 600px;
+  width: 360px;
+  height: 720px;
 }
 
 .panel p {
   margin: 0 0 10px;
+}
+
+.player {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.player input {
+  flex: 1;
+  border: 1px solid #999;
+  background: #fff;
+  color: #1a1a1a;
+  padding: 8px 10px;
 }
 
 .actions {
@@ -62,10 +77,44 @@ button {
 }
 
 .controls button {
-  min-width: 76px;
-  min-height: 52px;
-  font-size: 1.2rem;
+  min-width: 96px;
+  min-height: 64px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-width: 2px;
   touch-action: manipulation;
+}
+
+.leaderboard {
+  margin-top: 14px;
+  border-top: 1px solid #d8d8d8;
+  padding-top: 10px;
+}
+
+.leaderboard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leaderboard h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+#ranking-list {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+#ranking-list li {
+  margin: 4px 0;
+}
+
+.empty-rank {
+  list-style: none;
+  margin-left: -22px;
+  color: #666;
 }
 
 @media (max-width: 720px) {
@@ -75,15 +124,23 @@ button {
 
   #board {
     width: 100%;
-    max-width: 320px;
+    max-width: 360px;
     height: auto;
     aspect-ratio: 1 / 2;
   }
 
   .controls button {
     flex: 1;
-    min-width: 90px;
-    min-height: 60px;
-    font-size: 1.35rem;
+    min-width: 110px;
+    min-height: 84px;
+    font-size: 2rem;
+  }
+
+  .player {
+    flex-wrap: wrap;
+  }
+
+  .player input {
+    min-width: 160px;
   }
 }

@@ -1,8 +1,12 @@
 const COLS = 10;
 const ROWS = 20;
-const BLOCK = 30;
+const BLOCK = 36;
 const BASE_DROP_MS = 700;
 const MIN_DROP_MS = 120;
+const DEFAULT_PLAYER_NAME = "Player";
+const LEADERBOARD_KEY = "tetris_leaderboard_v1";
+const PLAYER_NAME_KEY = "tetris_player_name_v1";
+const MAX_RANKINGS = 10;
 
 const SHAPES = {
   I: [[1, 1, 1, 1]],
@@ -219,9 +223,115 @@ const statusEl = document.getElementById("status");
 const restartBtn = document.getElementById("restart-btn");
 const pauseBtn = document.getElementById("pause-btn");
 const controlBtns = document.querySelectorAll("[data-action]");
+const playerNameInput = document.getElementById("player-name");
+const savePlayerBtn = document.getElementById("save-player-btn");
+const currentPlayerEl = document.getElementById("current-player");
+const rankingListEl = document.getElementById("ranking-list");
+const clearRankingBtn = document.getElementById("clear-ranking-btn");
 
 let state = createState();
 let timer = null;
+let currentPlayerName = DEFAULT_PLAYER_NAME;
+let hasRecordedCurrentRound = false;
+
+function readLeaderboard() {
+  try {
+    const raw = window.localStorage.getItem(LEADERBOARD_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter((item) => item && typeof item.name === "string" && Number.isFinite(item.score))
+      .map((item) => ({
+        name: item.name.trim().slice(0, 20) || DEFAULT_PLAYER_NAME,
+        score: Math.max(0, Math.floor(item.score)),
+        lines: Number.isFinite(item.lines) ? Math.max(0, Math.floor(item.lines)) : 0,
+        at: typeof item.at === "number" ? item.at : Date.now(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboard(entries) {
+  window.localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries));
+}
+
+function sortRankings(entries) {
+  return [...entries].sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    if (b.lines !== a.lines) {
+      return b.lines - a.lines;
+    }
+    return a.at - b.at;
+  });
+}
+
+function renderRankingBoard() {
+  if (!rankingListEl) {
+    return;
+  }
+  const entries = sortRankings(readLeaderboard()).slice(0, MAX_RANKINGS);
+  rankingListEl.innerHTML = "";
+  if (entries.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty-rank";
+    li.textContent = "No scores yet.";
+    rankingListEl.appendChild(li);
+    return;
+  }
+  for (const entry of entries) {
+    const li = document.createElement("li");
+    li.textContent = `${entry.name} - ${entry.score} pts (${entry.lines} lines)`;
+    rankingListEl.appendChild(li);
+  }
+}
+
+function normalizePlayerName(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) {
+    return DEFAULT_PLAYER_NAME;
+  }
+  return trimmed.slice(0, 20);
+}
+
+function setCurrentPlayerName(name) {
+  currentPlayerName = normalizePlayerName(name);
+  if (currentPlayerEl) {
+    currentPlayerEl.textContent = currentPlayerName;
+  }
+  if (playerNameInput) {
+    playerNameInput.value = currentPlayerName;
+  }
+  window.localStorage.setItem(PLAYER_NAME_KEY, currentPlayerName);
+}
+
+function loadCurrentPlayerName() {
+  const stored = window.localStorage.getItem(PLAYER_NAME_KEY);
+  setCurrentPlayerName(stored || DEFAULT_PLAYER_NAME);
+}
+
+function recordScoreIfNeeded() {
+  if (!state.isGameOver || hasRecordedCurrentRound) {
+    return;
+  }
+  const entries = readLeaderboard();
+  entries.push({
+    name: currentPlayerName,
+    score: state.score,
+    lines: state.lines,
+    at: Date.now(),
+  });
+  saveLeaderboard(sortRankings(entries).slice(0, MAX_RANKINGS));
+  hasRecordedCurrentRound = true;
+  renderRankingBoard();
+}
 
 function drawCell(x, y, type) {
   ctx.fillStyle = COLORS[type] || COLORS.G;
@@ -266,6 +376,7 @@ function render() {
     statusEl.textContent = "Running";
   }
   pauseBtn.textContent = state.isPaused ? "Resume" : "Pause";
+  recordScoreIfNeeded();
 }
 
 function startLoop() {
@@ -290,6 +401,7 @@ function startLoop() {
 
 function restart() {
   state = createState();
+  hasRecordedCurrentRound = false;
   render();
   startLoop();
 }
@@ -342,8 +454,20 @@ document.addEventListener("keydown", (event) => {
 
 restartBtn.addEventListener("click", restart);
 pauseBtn.addEventListener("click", togglePause);
+savePlayerBtn.addEventListener("click", () => setCurrentPlayerName(playerNameInput.value));
+playerNameInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    setCurrentPlayerName(playerNameInput.value);
+  }
+});
+clearRankingBtn.addEventListener("click", () => {
+  saveLeaderboard([]);
+  renderRankingBoard();
+});
 for (const btn of controlBtns) {
   btn.addEventListener("click", () => handleAction(btn.dataset.action));
 }
 
+loadCurrentPlayerName();
+renderRankingBoard();
 restart();

@@ -10,8 +10,14 @@
     <main class="app">
       <h1>Classic Tetris</h1>
       <div class="layout">
-        <canvas id="board" width="300" height="600" aria-label="Tetris board"></canvas>
+        <canvas id="board" width="360" height="720" aria-label="Tetris board"></canvas>
         <aside class="panel">
+          <div class="player">
+            <label for="player-name">Player</label>
+            <input id="player-name" type="text" maxlength="20" placeholder="Enter name" />
+            <button id="save-player-btn" type="button">Set</button>
+          </div>
+          <p>Current: <strong id="current-player">Player</strong></p>
           <p>Score: <strong id="score">0</strong></p>
           <p>Lines: <strong id="lines">0</strong></p>
           <p>Level: <strong id="level">1</strong></p>
@@ -21,6 +27,13 @@
             <button id="pause-btn" type="button">Pause</button>
           </div>
           <p class="help">Arrows: move/rotate, Space: hard drop, P: pause.</p>
+          <section class="leaderboard" aria-label="Player ranking board">
+            <div class="leaderboard-head">
+              <h2>Ranking</h2>
+              <button id="clear-ranking-btn" type="button">Clear</button>
+            </div>
+            <ol id="ranking-list"></ol>
+          </section>
         </aside>
       </div>
       <div class="controls" aria-label="Mobile controls">
