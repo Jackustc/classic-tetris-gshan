@@ -1,12 +1,19 @@
 const COLS = 10;
 const ROWS = 20;
 const BLOCK = 32;
-const BASE_DROP_MS = 700;
-const MIN_DROP_MS = 120;
 const DEFAULT_PLAYER_NAME = "Player";
 const LEADERBOARD_KEY = "tetris_leaderboard_v1";
 const PLAYER_NAME_KEY = "tetris_player_name_v1";
+const DIFFICULTY_KEY = "tetris_difficulty_v1";
 const MAX_RANKINGS = 10;
+const DEFAULT_DIFFICULTY = "normal";
+
+const DIFFICULTY_CONFIG = {
+  easy: { baseDropMs: 900, stepMs: 55, minDropMs: 180 },
+  normal: { baseDropMs: 700, stepMs: 70, minDropMs: 120 },
+  hard: { baseDropMs: 560, stepMs: 85, minDropMs: 90 },
+  expert: { baseDropMs: 460, stepMs: 95, minDropMs: 70 },
+};
 
 const SHAPES = {
   I: [[1, 1, 1, 1]],
@@ -126,8 +133,9 @@ function clearLines(board) {
   return cleared;
 }
 
-function getDropMs(level) {
-  return Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * 70);
+function getDropMs(level, difficulty) {
+  const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG[DEFAULT_DIFFICULTY];
+  return Math.max(cfg.minDropMs, cfg.baseDropMs - (level - 1) * cfg.stepMs);
 }
 
 function createState(rng = Math.random) {
@@ -139,6 +147,7 @@ function createState(rng = Math.random) {
     score: 0,
     lines: 0,
     level: 1,
+    difficulty: DEFAULT_DIFFICULTY,
     isPaused: false,
     isGameOver: false,
     rng,
@@ -228,6 +237,7 @@ const savePlayerBtn = document.getElementById("save-player-btn");
 const currentPlayerEl = document.getElementById("current-player");
 const rankingListEl = document.getElementById("ranking-list");
 const clearRankingBtn = document.getElementById("clear-ranking-btn");
+const difficultySelect = document.getElementById("difficulty-select");
 
 let state = createState();
 let timer = null;
@@ -250,6 +260,10 @@ function readLeaderboard() {
         name: item.name.trim().slice(0, 20) || DEFAULT_PLAYER_NAME,
         score: Math.max(0, Math.floor(item.score)),
         lines: Number.isFinite(item.lines) ? Math.max(0, Math.floor(item.lines)) : 0,
+        difficulty:
+          typeof item.difficulty === "string" && DIFFICULTY_CONFIG[item.difficulty]
+            ? item.difficulty
+            : DEFAULT_DIFFICULTY,
         at: typeof item.at === "number" ? item.at : Date.now(),
       }));
   } catch {
@@ -288,7 +302,7 @@ function renderRankingBoard() {
   }
   for (const entry of entries) {
     const li = document.createElement("li");
-    li.textContent = `${entry.name} - ${entry.score} pts (${entry.lines} lines)`;
+    li.textContent = `${entry.name} - ${entry.score} pts (${entry.lines} lines, ${entry.difficulty})`;
     rankingListEl.appendChild(li);
   }
 }
@@ -317,6 +331,30 @@ function loadCurrentPlayerName() {
   setCurrentPlayerName(stored || DEFAULT_PLAYER_NAME);
 }
 
+function setDifficulty(nextDifficulty, shouldRestart = false) {
+  const difficulty = DIFFICULTY_CONFIG[nextDifficulty] ? nextDifficulty : DEFAULT_DIFFICULTY;
+  state.difficulty = difficulty;
+  window.localStorage.setItem(DIFFICULTY_KEY, difficulty);
+  if (difficultySelect) {
+    difficultySelect.value = difficulty;
+  }
+  if (shouldRestart) {
+    restart();
+  } else {
+    startLoop();
+    render();
+  }
+}
+
+function loadDifficulty() {
+  const stored = window.localStorage.getItem(DIFFICULTY_KEY);
+  const difficulty = DIFFICULTY_CONFIG[stored] ? stored : DEFAULT_DIFFICULTY;
+  state.difficulty = difficulty;
+  if (difficultySelect) {
+    difficultySelect.value = difficulty;
+  }
+}
+
 function recordScoreIfNeeded() {
   if (!state.isGameOver || hasRecordedCurrentRound) {
     return;
@@ -326,6 +364,7 @@ function recordScoreIfNeeded() {
     name: currentPlayerName,
     score: state.score,
     lines: state.lines,
+    difficulty: state.difficulty,
     at: Date.now(),
   });
   saveLeaderboard(sortRankings(entries).slice(0, MAX_RANKINGS));
@@ -383,6 +422,7 @@ function startLoop() {
   if (timer) {
     clearInterval(timer);
   }
+  const initialMs = getDropMs(state.level, state.difficulty);
   timer = setInterval(() => {
     softDrop(state);
     render();
@@ -390,17 +430,19 @@ function startLoop() {
       clearInterval(timer);
       timer = null;
     } else {
-      const targetMs = getDropMs(state.level);
+      const targetMs = getDropMs(state.level, state.difficulty);
       if (timer && timer._ms !== targetMs) {
         startLoop();
       }
     }
-  }, getDropMs(state.level));
-  timer._ms = getDropMs(state.level);
+  }, initialMs);
+  timer._ms = initialMs;
 }
 
 function restart() {
+  const difficulty = state.difficulty;
   state = createState();
+  state.difficulty = difficulty;
   hasRecordedCurrentRound = false;
   render();
   startLoop();
@@ -464,10 +506,14 @@ clearRankingBtn.addEventListener("click", () => {
   saveLeaderboard([]);
   renderRankingBoard();
 });
+difficultySelect.addEventListener("change", (event) => {
+  setDifficulty(event.target.value, true);
+});
 for (const btn of controlBtns) {
   btn.addEventListener("click", () => handleAction(btn.dataset.action));
 }
 
 loadCurrentPlayerName();
+loadDifficulty();
 renderRankingBoard();
 restart();
