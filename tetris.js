@@ -1,6 +1,6 @@
 const COLS = 10;
 const ROWS = 20;
-const BLOCK = 36;
+const BLOCK = 32;
 const BASE_DROP_MS = 700;
 const MIN_DROP_MS = 120;
 const DEFAULT_PLAYER_NAME = "Player";
